@@ -1,0 +1,225 @@
+swagger: "2.0"
+
+info:
+  description: "No description"
+  version: "2.0"
+  title: "SNG"
+
+consumes:
+  - application/x-www-form-urlencoded
+produces:
+  - application/json
+
+parameters:
+  id:
+    name: id
+    in: path
+    description: account ID
+    required: true
+    type: string
+    maxLength: 64
+
+paths:
+  /createContract:  
+    post:
+      operationId: createContract
+      summary: Create contract
+      parameters:
+        - name: CREATION_DATE
+          in: formData
+          description: creation date
+          required: true
+          type: string
+        - name: START_DATE
+          in: formData
+          description: Start date
+          required: true
+          type: string
+        - name: END_DATE
+          in: formData
+          description: End date
+          required: true
+          type: string
+        - name: PURCHASER
+          in: formData
+          description: PURCHASER
+          required: true
+          type: string 
+        - name: SUPPLIER
+          in: formData
+          description: SUPPLIER
+          required: true
+          type: string  
+        - name: MAX_PENALTY
+          in: formData
+          description: MAX_PENALTY
+          required: true
+          type: string
+        - name: PENALTY_PER_DAY
+          in: formData
+          description: PENALTY_PER_DAY
+          required: true
+          type: string
+        - name: CREATED_BY
+          in: formData
+          description: CREATED_BY
+          required: true
+          type: string
+      responses:
+        200:
+          description: "OK"
+          schema:
+            type: object
+            additionalProperties: true
+        401:
+          description: "Already exists"
+        400:
+          description: "Can't create contract"
+
+  /changeStatusContract:  
+    post:
+      operationId: changeStatusContract
+      summary: changeStatusContract
+      parameters:
+        - name: contractId
+          in: formData
+          description: Contract ID
+          required: true
+          type: string
+        - name: signer type
+          in: formData
+          description: signer type
+          required: true
+          type: string
+        - name: Timestamp
+          in: formData
+          description: Timestamp string
+          required: true
+          type: string
+      responses:
+        200:
+          description: "OK"
+        500:
+          description: "Can't change status"
+
+  /getAllContracts:  
+    get:
+      operationId: getAllContracts
+      summary: Get contracts
+      responses:
+        200:
+          description: "OK"
+        500:
+          description: "Can't find"
+
+  /createOrder:
+    post:
+      operationId: createOrder
+      summary: Create order
+      parameters:
+        - name: xmlOrder
+          in: formData
+          description: XML file with Order
+          required: true
+          type: string
+      responses:
+        200:
+          description: "OK"
+        400:
+          description: "can't create order"
+        401:
+          description: "order already exists"
+        500:
+          description: "can't unmarshal order xml"
+        
+  /getAllOrders:  
+    get:
+      operationId: getAllOrders
+      summary: Get all orders
+      responses:
+        200:
+          description: "OK"
+        500:
+          description: "can't get orders"
+
+  # /searchLot:  
+  #   get:
+  #     operationId: searchLot
+  #     summary: Search items
+  #     parameters:
+  #       - name: searchString
+  #         in: query
+  #         description: search certification Id
+  #         required: false
+  #         type: string
+  #       - name: searchPacket
+  #         in: query
+  #         description: search Packet
+  #         required: false
+  #         type: string
+  #       - name: searchStatus
+  #         in: query
+  #         description: search Status
+  #         required: false
+  #         type: string
+  #       - name: searchWagon
+  #         in: query
+  #         description: search wagon
+  #         required: false
+  #         type: string
+  #       - name: searchPrikaz
+  #         in: query
+  #         description: search prikaz
+  #         required: false
+  #         type: string 
+  #       - name: searchOrder
+  #         in: query
+  #         description: search order
+  #         required: false
+      #     type: string
+      #   - name: searcgWeld
+      #     in: query
+      #     description: search item weld
+      #     required: false
+      #     type: string       
+      # responses:
+      #   200:
+      #     description: "OK"
+      #   500:
+      #     description: "Can't find"
+          
+  # /history:
+  #   get:
+  #     operationId: history
+  #     summary: Get history
+  #     parameters:
+  #       - name: id
+  #         in: query
+  #         description: certificate id
+  #         required: false
+  #         type: string
+  #     responses:
+  #       200:
+  #         description: "OK"
+  #       500:
+  #         description: "Can't find"
+
+  # /basicStats:
+  #   get:
+  #     operationId: basicStats
+  #     summary: 1st screen Statistics
+  #     responses:
+  #       200:
+  #         description: "OK"
+  #       500:
+  #         description: "Internal errorrrrrrrrrrrr"
+
+  # /stats:
+  #   get:
+  #     operationId: stats
+  #     summary: 2nd screen Statistics
+  #     responses:
+  #       200:
+  #         description: "OK"
+  #       500:
+  #         description: "Internal errorrrrrrrrrrrr"
