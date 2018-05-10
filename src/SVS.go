@@ -41,6 +41,10 @@ type SEARCH struct {
 	Contracts []CONTRACT
 }
 
+type Search_Shipment struct {
+	Shipments []Shipment
+}
+
 type ITEM struct {
 	SUBLOT_NUMBER    string `xml:"SUBLOT_NUMBER"`
 	PRODUCER_YEAR    string `xml:"PRODUCER_YEAR"`
@@ -157,6 +161,33 @@ type OrderItem struct {
 	Unit       string `xml:"UNIT"`
 }
 
+type Shipment struct {
+	ShipmentID     string          `xml:"SHIPMENT_ID"`
+	OrderID        string          `xml:"ORDER_ID"`
+	CreatedBy      string          `xml:"CREATED_BY"`
+	CreateDate     string          `xml:"CREATED_DATE"`
+	CreateTime     string          `xml:"CREATED_TIME"`
+	ShipmentDate   string          `xml:"SHIPMENT_DATE"`
+	ShipmentItems  []ShipmentItem  `xml:"SHIPMENT_ITEMS>SHIPMENT_ITEM"`
+}
+
+type ShipmentItem struct {
+	ShipmentID             string `xml:"SHIPMENT_ID"`
+	Line                   string `xml:"LINE"`
+	CreatedBy              string `xml:"CREATED_BY"`
+	CreateDate             string `xml:"CREATED_DATE"`
+	CreateTime             string `xml:"CREATED_TIME"`
+	ItemCode               string `xml:"ITEM_CODE"`
+	ItemName               string `xml:"ITEM_NAME"`
+    Lot                    string `xml:"LOT"`
+    CertificationNumber    string `xml:"CERTIFICATION_NUMBER"`
+    OrderId                string `xml:"ORDER_ID"`
+    Position               string `xml:"POSITION"`
+    CertificationDate      string `xml:"CERTIFICATION_DATE"`
+    Quantity               string `xml:"QUANTITY"`    
+	Unit                   string `xml:"UNIT"`
+}
+
 type Payment struct {
 	PaymentID    string
 	DocumentID   string
@@ -209,6 +240,10 @@ func (cc *SVS) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		return cc.createOrder(stub, args)
 	case "getAllOrders":
 		return cc.getAllOrders(stub, args)
+    case "createShipment":
+		return cc.createShipment(stub, args)
+	case "getAllShipments":
+		return cc.getAllShipments(stub, args)    
 
 		//	case "uploadXml":
 		//		return cc.uploadXml(stub, args)
@@ -303,6 +338,46 @@ func (cc *SVS) getAllContracts(stub shim.ChaincodeStubInterface, args []string) 
 	return Success(200, "OK", resultJson)
 
 }
+
+func (cc *SVS) createShipment(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	var shipment Shipment
+	xmlErr := xml.Unmarshal([]byte(args[0]), &shipment)
+	if xmlErr != nil {
+		return Error(500, "can't unmarshal shipment xml")
+	}
+	if value, err := stub.GetState(shipment.ShipmentID); err != nil || value != nil {
+		return Error(401, "shipment already exists")
+	}	
+
+	json, _ := json.Marshal(shipment)
+	if err := stub.PutState(shipment.ShipmentID, json); err != nil {
+		return Error(400, "can't create shipment")
+	}
+	return Success(http.StatusOK, "OK", nil)
+}
+
+func (cc *SVS) getAllShipments(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	queryString := fmt.Sprintf("{\"selector\": {\"ShipmentDate\": {\"$regex\": \"^\"}}}")
+	resultsIterator, err := stub.GetQueryResult(queryString)
+	if err != nil {
+		return Error(http.StatusInternalServerError, err.Error())
+	}
+	defer resultsIterator.Close()
+
+	var results Search_Shipment
+	for resultsIterator.HasNext() {
+		it, _ := resultsIterator.Next()
+		strShipment, _ := stub.GetState(it.Key)		
+        var shipmentStruct Shipment
+        json.Unmarshal(strShipment, &shipmentStruct)
+        results.Shipments = append(results.Shipments, shipmentStruct)
+
+	}
+    resultJson, _ := json.Marshal(results.Shipments)
+	return Success(200, "OK", resultJson)
+}
+
+
 
 func (cc *SVS) createOrder(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	var order Order

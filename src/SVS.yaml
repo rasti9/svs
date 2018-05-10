@@ -141,6 +141,36 @@ paths:
           description: "OK"
         500:
           description: "can't get orders"
+          
+  /createShipment:
+    post:
+      operationId: createShipment
+      summary: Create shipment
+      parameters:
+        - name: xmlShipment
+          in: formData
+          description: XML file with Shipment
+          required: true
+          type: string
+      responses:
+        200:
+          description: "OK"
+        400:
+          description: "can't create shipment"
+        401:
+          description: "shipment already exists"
+        500:
+          description: "can't unmarshal shipment xml"
+        
+  /getAllShipments:  
+    get:
+      operationId: getAllShipments
+      summary: Get all shipments
+      responses:
+        200:
+          description: "OK"
+        500:
+          description: "can't get shipments"          
 
   # /searchLot:  
   #   get:
