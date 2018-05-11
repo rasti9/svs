@@ -49,6 +49,10 @@ type Search_Payment struct {
 	Payments []Payment
 }
 
+type Search_Invoice struct {
+	Invoices []Invoice
+}
+
 type ITEM struct {
 	SUBLOT_NUMBER    string `xml:"SUBLOT_NUMBER"`
 	PRODUCER_YEAR    string `xml:"PRODUCER_YEAR"`
@@ -166,32 +170,59 @@ type OrderItem struct {
 }
 
 type Shipment struct {
-	ShipmentID     string          `xml:"SHIPMENT_ID"`
-	OrderID        string          `xml:"ORDER_ID"`
-	CreatedBy      string          `xml:"CREATED_BY"`
-	CreateDate     string          `xml:"CREATED_DATE"`
-	CreateTime     string          `xml:"CREATED_TIME"`
-	ShipmentDate   string          `xml:"SHIPMENT_DATE"`
-	ShipmentItems  []ShipmentItem  `xml:"SHIPMENT_ITEMS>SHIPMENT_ITEM"`
-    Status         string
-    Timestamp      string
+	ShipmentID    string         `xml:"SHIPMENT_ID"`
+	OrderID       string         `xml:"ORDER_ID"`
+	CreatedBy     string         `xml:"CREATED_BY"`
+	CreateDate    string         `xml:"CREATED_DATE"`
+	CreateTime    string         `xml:"CREATED_TIME"`
+	ShipmentDate  string         `xml:"SHIPMENT_DATE"`
+	ShipmentItems []ShipmentItem `xml:"SHIPMENT_ITEMS>SHIPMENT_ITEM"`
+	Status        string
+	Timestamp     string
 }
 
 type ShipmentItem struct {
-	ShipmentID             string `xml:"SHIPMENT_ID"`
-	Line                   string `xml:"LINE"`
-	CreatedBy              string `xml:"CREATED_BY"`
-	CreateDate             string `xml:"CREATED_DATE"`
-	CreateTime             string `xml:"CREATED_TIME"`
-	ItemCode               string `xml:"ITEM_CODE"`
-	ItemName               string `xml:"ITEM_NAME"`
-    Lot                    string `xml:"LOT"`
-    CertificationNumber    string `xml:"CERTIFICATION_NUMBER"`
-    OrderId                string `xml:"ORDER_ID"`
-    Position               string `xml:"POSITION"`
-    CertificationDate      string `xml:"CERTIFICATION_DATE"`
-    Quantity               string `xml:"QUANTITY"`    
-	Unit                   string `xml:"UNIT"`
+	ShipmentID          string `xml:"SHIPMENT_ID"`
+	Line                string `xml:"LINE"`
+	CreatedBy           string `xml:"CREATED_BY"`
+	CreateDate          string `xml:"CREATED_DATE"`
+	CreateTime          string `xml:"CREATED_TIME"`
+	ItemCode            string `xml:"ITEM_CODE"`
+	ItemName            string `xml:"ITEM_NAME"`
+	Lot                 string `xml:"LOT"`
+	CertificationNumber string `xml:"CERTIFICATION_NUMBER"`
+	OrderId             string `xml:"ORDER_ID"`
+	Position            string `xml:"POSITION"`
+	CertificationDate   string `xml:"CERTIFICATION_DATE"`
+	Quantity            string `xml:"QUANTITY"`
+	Unit                string `xml:"UNIT"`
+}
+
+type Invoice struct {
+	InvoiceID    string         `xml:"INVOICE_ID"`
+	CreatedBy    string         `xml:"CREATED_BY"`
+	CreateDate   string         `xml:"CREATED_DATE"`
+	CreateTime   string         `xml:"CREATED_TIME"`
+	InvoiceDate  string         `xml:"INVOICE_DATE"`
+	InvoiceItems []ShipmentItem `xml:"INVOICE_ITEMS>INVOICE_ITEM"`
+	DeliveryDate string
+	Type         string
+}
+
+type InvoiceItem struct {
+	InvoiceID  string `xml:"INVOICE_ID"`
+	Line       string `xml:"LINE"`
+	CreatedBy  string `xml:"CREATED_BY"`
+	CreateDate string `xml:"CREATED_DATE"`
+	CreateTime string `xml:"CREATED_TIME"`
+	ShipmentID string `xml:"SHIPMENT_ID"`
+	ItemCode   string `xml:"ITEM_CODE"`
+	ItemName   string `xml:"ITEM_NAME"`
+	Quantity   string `xml:"QUANTITY"`
+	PriceDate  string `xml:"PRICE_DATE"`
+	Amount     string `xml:"AMOUNT"`
+	Tax        string `xml:"TAX"`
+	Unit       string `xml:"UNIT"`
 }
 
 type Payment struct {
@@ -246,16 +277,20 @@ func (cc *SVS) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 		return cc.createOrder(stub, args)
 	case "getAllOrders":
 		return cc.getAllOrders(stub, args)
-    case "createShipment":
+	case "createShipment":
 		return cc.createShipment(stub, args)
 	case "getAllShipments":
-		return cc.getAllShipments(stub, args)   
-    case "getAllPayments":
-		return cc.getAllPayments(stub, args)  
-    case "approveShipment":
-		return cc.approveShipment(stub, args)       
-    case "makePayment":
-		return cc.makePayment(stub, args)   
+		return cc.getAllShipments(stub, args)
+	case "createInvoice":
+		return cc.createInvoice(stub, args)
+	case "getAllInvoices":
+		return cc.getAllInvoices(stub, args)
+	case "getAllPayments":
+		return cc.getAllPayments(stub, args)
+	case "approveShipment":
+		return cc.approveShipment(stub, args)
+	case "makePayment":
+		return cc.makePayment(stub, args)
 		//	case "uploadXml":
 		//		return cc.uploadXml(stub, args)
 		//	case "search":
@@ -358,8 +393,8 @@ func (cc *SVS) createShipment(stub shim.ChaincodeStubInterface, args []string) p
 	}
 	if value, err := stub.GetState(shipment.ShipmentID); err != nil || value != nil {
 		return Error(401, "shipment already exists")
-	}	    
-    shipment.Status = ""
+	}
+	shipment.Status = ""
 	json, _ := json.Marshal(shipment)
 	if err := stub.PutState(shipment.ShipmentID, json); err != nil {
 		return Error(400, "can't create shipment")
@@ -378,13 +413,13 @@ func (cc *SVS) getAllShipments(stub shim.ChaincodeStubInterface, args []string) 
 	var results Search_Shipment
 	for resultsIterator.HasNext() {
 		it, _ := resultsIterator.Next()
-		strShipment, _ := stub.GetState(it.Key)		
-        var shipmentStruct Shipment
-        json.Unmarshal(strShipment, &shipmentStruct)
-        results.Shipments = append(results.Shipments, shipmentStruct)
+		strShipment, _ := stub.GetState(it.Key)
+		var shipmentStruct Shipment
+		json.Unmarshal(strShipment, &shipmentStruct)
+		results.Shipments = append(results.Shipments, shipmentStruct)
 
 	}
-    resultJson, _ := json.Marshal(results.Shipments)
+	resultJson, _ := json.Marshal(results.Shipments)
 	return Success(200, "OK", resultJson)
 }
 
@@ -399,17 +434,15 @@ func (cc *SVS) getAllPayments(stub shim.ChaincodeStubInterface, args []string) p
 	var results Search_Payment
 	for resultsIterator.HasNext() {
 		it, _ := resultsIterator.Next()
-		strPayment, _ := stub.GetState(it.Key)		
-        var paymentStruct Payment
-        json.Unmarshal(strPayment, &paymentStruct)
-        results.Payments = append(results.Payments, paymentStruct)
+		strPayment, _ := stub.GetState(it.Key)
+		var paymentStruct Payment
+		json.Unmarshal(strPayment, &paymentStruct)
+		results.Payments = append(results.Payments, paymentStruct)
 
 	}
-    resultJson, _ := json.Marshal(results.Payments)
+	resultJson, _ := json.Marshal(results.Payments)
 	return Success(200, "OK", resultJson)
 }
-
-
 
 func (cc *SVS) createOrder(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	var order Order
@@ -463,45 +496,84 @@ func (cc *SVS) getAllOrders(stub shim.ChaincodeStubInterface, args []string) pee
 	return Success(200, "OK", resultJson)
 }
 
-
 func (cc *SVS) makePayment(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	payment, _ := stub.GetState(args[0])
-    paymentTimestamp := args[1]
-    
-    var paymentStruct Payment
+	paymentTimestamp := args[1]
+
+	var paymentStruct Payment
 	json.Unmarshal(payment, &paymentStruct)
-    
-    paymentStruct.Status = "Paid"
-    paymentStruct.Timestamp = paymentTimestamp
-    
-    json, _ := json.Marshal(paymentStruct)
+
+	paymentStruct.Status = "Paid"
+	paymentStruct.Timestamp = paymentTimestamp
+
+	json, _ := json.Marshal(paymentStruct)
 	err := stub.PutState(args[0], json)
 	if err != nil {
 		return Error(500, "Can't make payment")
 	}
-	return Success(200, "OK", nil)    
-    
+	return Success(200, "OK", nil)
+
 }
 
 func (cc *SVS) approveShipment(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	shipment, _ := stub.GetState(args[0])   
-    shipmentTimestamp := args[1]
-    
-    var shipmentStruct Shipment
+	shipment, _ := stub.GetState(args[0])
+	shipmentTimestamp := args[1]
+
+	var shipmentStruct Shipment
 	json.Unmarshal(shipment, &shipmentStruct)
-    
-    shipmentStruct.Status = "Approved"
-    shipmentStruct.Timestamp = shipmentTimestamp
-    
-    json, _ := json.Marshal(shipmentStruct)
+
+	shipmentStruct.Status = "Approved"
+	shipmentStruct.Timestamp = shipmentTimestamp
+
+	json, _ := json.Marshal(shipmentStruct)
 	err := stub.PutState(args[0], json)
 	if err != nil {
 		return Error(500, "Can't approve shipment")
 	}
-	return Success(200, "OK", nil)    
-    
+	return Success(200, "OK", nil)
+
 }
 
+func (cc *SVS) createInvoice(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	var invoice Invoice
+
+	xmlErr := xml.Unmarshal([]byte(args[0]), &invoice)
+	if xmlErr != nil {
+		return Error(500, "can't unmarshal invoice xml")
+	}
+
+	if value, err := stub.GetState(invoice.InvoiceID); err != nil || value != nil {
+		return Error(401, "invoice already exists")
+	}
+
+	invoice.Type = "t_invoice"
+	jsonInvoice, _ := json.Marshal(invoice)
+	if err := stub.PutState(invoice.InvoiceID, jsonInvoice); err != nil {
+		return Error(400, "can't create invoice")
+	}
+
+	return Success(http.StatusOK, "OK", nil)
+}
+
+func (cc *SVS) getAllInvoices(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	queryString := fmt.Sprintf("{\"selector\": {\"t_invoice\": {\"$regex\": \"^\"}}}")
+	resultsIterator, err := stub.GetQueryResult(queryString)
+	if err != nil {
+		return Error(http.StatusInternalServerError, err.Error())
+	}
+	defer resultsIterator.Close()
+
+	var results Search_Invoice
+	for resultsIterator.HasNext() {
+		it, _ := resultsIterator.Next()
+		jsonInvoice, _ := stub.GetState(it.Key)
+		var invoice Invoice
+		json.Unmarshal(jsonInvoice, &invoice)
+		results.Invoices = append(results.Invoices, invoice)
+	}
+	resultJson, _ := json.Marshal(results.Invoices)
+	return Success(200, "OK", resultJson)
+}
 
 func validateCertData(cert CERTIFICATE, date string) (bool, string) {
 	cert.CERT_NUMBER = replaceStr(cert.CERT_NUMBER)

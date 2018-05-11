@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<INVOICE>
+    <INVOICE_ID>604792190</INVOICE_ID>
+    <CREATED_BY>O2C_INT_USER</CREATED_BY>
+    <CREATED_TIME>02:04:14</CREATED_TIME>
+    <CREATED_DATE>18/11/2017</CREATED_DATE>
+    <INVOICE_DATE>26/11/2017</INVOICE_DATE>   
+    <INVOICE_ITEMS>
+        <INVOICE_ITEM>
+            <INVOICE_ID>604792190</INVOICE_ID>
+            <LINE>000010</LINE>
+            <CREATED_BY>O2C_INT_USER</CREATED_BY>
+            <CREATED_DATE>18/11/2017</CREATED_DATE>            
+            <CREATED_TIME>02:04:14</CREATED_TIME>			
+            <SHIPMENT_ID>0100434082</SHIPMENT_ID>
+            <ITEM_CODE>P0ST3SP.G3800LKA00</ITEM_CODE>
+            <ITEM_NAME>ЛстГк/Ст3сп/ГОСТ 380/10/1401_5</ITEM_NAME>
+            <QUANTITY>8,325</QUANTITY>           
+            <PRICE_DATE>8,325</PRICE_DATE>           
+            <AMOUNT>Т</AMOUNT>			
+            <TAX>Т</TAX>			
+            <UNIT>Т</UNIT>
+        </INVOICE_ITEM>
+    </INVOICE_ITEMS>
+</INVOICE>

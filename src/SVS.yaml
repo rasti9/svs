@@ -10,15 +10,6 @@ consumes:
 produces:
   - application/json
 
-parameters:
-  id:
-    name: id
-    in: path
-    description: account ID
-    required: true
-    type: string
-    maxLength: 64
-
 paths:
   /createContract:  
     post:
@@ -220,6 +211,39 @@ paths:
             description: "OK"
           500:
             description: "can't approve shipment"          
+  
+  /createInvoice:
+    post:
+      operationId: createInvoice
+      summary: create invoice
+      parameters:
+        - name: xmlInvoice
+          in: formData
+          description: XML file with Invoice
+          required: true
+          type: string
+      responses:
+        200:
+          description: "OK"
+        400:
+          description: "can't create invoice"
+        401:
+          description: "invoice already exists"
+        500:
+          description: "can't unmarshal invoice xml"
+        
+  
+  /getAllInvoices:  
+    get:
+      operationId: getAllInvoices
+      summary: get all invoices
+      responses:
+        200:
+          description: "OK"
+        500:
+          description: "can't get invoices" 
+
+
   # /searchLot:  
   #   get:
   #     operationId: searchLot
