@@ -170,8 +170,56 @@ paths:
         200:
           description: "OK"
         500:
-          description: "can't get shipments"          
-
+          description: "can't get shipments" 
+  /getAllPayments:  
+    get:
+      operationId: getAllPayments
+      summary: Get all payments
+      responses:
+        200:
+          description: "OK"
+        500:
+          description: "can't get payments"           
+  /makePayment:
+    post:
+      operationId: makePayment
+      summary: Make payment
+      parameters:
+        - name: paymentId
+          in: formData
+          description: payment id
+          required: true
+          type: string
+        - name: paymentTimestamp
+          in: formData
+          description: payment timestamp
+          required: true
+          type: string    
+      responses:
+        200:
+          description: "OK"
+        500:
+          description: "can't make payment"
+  /approveShipment:
+      post:
+        operationId: approveShipment
+        summary: Approve shipment
+        parameters:
+          - name: shipmentId
+            in: formData
+            description: shipment id
+            required: true
+            type: string
+          - name: shipmentTimestamp
+            in: formData
+            description: shipment timestamp
+            required: true
+            type: string    
+        responses:
+          200:
+            description: "OK"
+          500:
+            description: "can't approve shipment"          
   # /searchLot:  
   #   get:
   #     operationId: searchLot

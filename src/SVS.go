@@ -45,6 +45,10 @@ type Search_Shipment struct {
 	Shipments []Shipment
 }
 
+type Search_Payment struct {
+	Payments []Payment
+}
+
 type ITEM struct {
 	SUBLOT_NUMBER    string `xml:"SUBLOT_NUMBER"`
 	PRODUCER_YEAR    string `xml:"PRODUCER_YEAR"`
@@ -169,6 +173,8 @@ type Shipment struct {
 	CreateTime     string          `xml:"CREATED_TIME"`
 	ShipmentDate   string          `xml:"SHIPMENT_DATE"`
 	ShipmentItems  []ShipmentItem  `xml:"SHIPMENT_ITEMS>SHIPMENT_ITEM"`
+    Status         string
+    Timestamp      string
 }
 
 type ShipmentItem struct {
@@ -243,8 +249,13 @@ func (cc *SVS) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
     case "createShipment":
 		return cc.createShipment(stub, args)
 	case "getAllShipments":
-		return cc.getAllShipments(stub, args)    
-
+		return cc.getAllShipments(stub, args)   
+    case "getAllPayments":
+		return cc.getAllPayments(stub, args)  
+    case "approveShipment":
+		return cc.approveShipment(stub, args)       
+    case "makePayment":
+		return cc.makePayment(stub, args)   
 		//	case "uploadXml":
 		//		return cc.uploadXml(stub, args)
 		//	case "search":
@@ -347,8 +358,8 @@ func (cc *SVS) createShipment(stub shim.ChaincodeStubInterface, args []string) p
 	}
 	if value, err := stub.GetState(shipment.ShipmentID); err != nil || value != nil {
 		return Error(401, "shipment already exists")
-	}	
-
+	}	    
+    shipment.Status = ""
 	json, _ := json.Marshal(shipment)
 	if err := stub.PutState(shipment.ShipmentID, json); err != nil {
 		return Error(400, "can't create shipment")
@@ -374,6 +385,27 @@ func (cc *SVS) getAllShipments(stub shim.ChaincodeStubInterface, args []string) 
 
 	}
     resultJson, _ := json.Marshal(results.Shipments)
+	return Success(200, "OK", resultJson)
+}
+
+func (cc *SVS) getAllPayments(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	queryString := fmt.Sprintf("{\"selector\": {\"PaymentID\": {\"$regex\": \"^\"}}}")
+	resultsIterator, err := stub.GetQueryResult(queryString)
+	if err != nil {
+		return Error(http.StatusInternalServerError, err.Error())
+	}
+	defer resultsIterator.Close()
+
+	var results Search_Payment
+	for resultsIterator.HasNext() {
+		it, _ := resultsIterator.Next()
+		strPayment, _ := stub.GetState(it.Key)		
+        var paymentStruct Payment
+        json.Unmarshal(strPayment, &paymentStruct)
+        results.Payments = append(results.Payments, paymentStruct)
+
+	}
+    resultJson, _ := json.Marshal(results.Payments)
 	return Success(200, "OK", resultJson)
 }
 
@@ -430,6 +462,46 @@ func (cc *SVS) getAllOrders(stub shim.ChaincodeStubInterface, args []string) pee
 	// resultJson, _ := json.Marshal(results.Contracts)
 	return Success(200, "OK", resultJson)
 }
+
+
+func (cc *SVS) makePayment(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	payment, _ := stub.GetState(args[0])
+    paymentTimestamp := args[1]
+    
+    var paymentStruct Payment
+	json.Unmarshal(payment, &paymentStruct)
+    
+    paymentStruct.Status = "Paid"
+    paymentStruct.Timestamp = paymentTimestamp
+    
+    json, _ := json.Marshal(paymentStruct)
+	err := stub.PutState(args[0], json)
+	if err != nil {
+		return Error(500, "Can't make payment")
+	}
+	return Success(200, "OK", nil)    
+    
+}
+
+func (cc *SVS) approveShipment(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+	shipment, _ := stub.GetState(args[0])   
+    shipmentTimestamp := args[1]
+    
+    var shipmentStruct Shipment
+	json.Unmarshal(shipment, &shipmentStruct)
+    
+    shipmentStruct.Status = "Approved"
+    shipmentStruct.Timestamp = shipmentTimestamp
+    
+    json, _ := json.Marshal(shipmentStruct)
+	err := stub.PutState(args[0], json)
+	if err != nil {
+		return Error(500, "Can't approve shipment")
+	}
+	return Success(200, "OK", nil)    
+    
+}
+
 
 func validateCertData(cert CERTIFICATE, date string) (bool, string) {
 	cert.CERT_NUMBER = replaceStr(cert.CERT_NUMBER)
