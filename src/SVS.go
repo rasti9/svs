@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
-
+	"time"   
+    "strconv"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
 )
@@ -170,6 +170,7 @@ type OrderItem struct {
 }
 
 type Shipment struct {
+<<<<<<< HEAD
 	ShipmentID    string         `xml:"SHIPMENT_ID"`
 	OrderID       string         `xml:"ORDER_ID"`
 	CreatedBy     string         `xml:"CREATED_BY"`
@@ -179,6 +180,23 @@ type Shipment struct {
 	ShipmentItems []ShipmentItem `xml:"SHIPMENT_ITEMS>SHIPMENT_ITEM"`
 	Status        string
 	Timestamp     string
+=======
+	ShipmentID     string          `xml:"SHIPMENT_ID"`
+	OrderID        string          `xml:"ORDER_ID"`
+	CreatedBy      string          `xml:"CREATED_BY"`
+	CreateDate     string          `xml:"CREATED_DATE"`
+	CreateTime     string          `xml:"CREATED_TIME"`
+	ShipmentDate   string          `xml:"SHIPMENT_DATE"`
+	ShipmentItems  []ShipmentItem  `xml:"SHIPMENT_ITEMS>SHIPMENT_ITEM"`
+    SumItems       []SumItems 
+    Status         string
+    Timestamp      string
+>>>>>>> master
+}
+
+type SumItems struct {
+    ItemCode               string
+    Quantity               float32   
 }
 
 type ShipmentItem struct {
@@ -386,21 +404,54 @@ func (cc *SVS) getAllContracts(stub shim.ChaincodeStubInterface, args []string) 
 }
 
 func (cc *SVS) createShipment(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	var shipment Shipment
+	
+    var shipment Shipment
 	xmlErr := xml.Unmarshal([]byte(args[0]), &shipment)
 	if xmlErr != nil {
 		return Error(500, "can't unmarshal shipment xml")
 	}
 	if value, err := stub.GetState(shipment.ShipmentID); err != nil || value != nil {
 		return Error(401, "shipment already exists")
+<<<<<<< HEAD
 	}
 	shipment.Status = ""
+=======
+	}	    
+    shipment.Status = ""
+
+    shipment.SumItems = sumShipmentItem(shipment.ShipmentItems)    
+    
+>>>>>>> master
 	json, _ := json.Marshal(shipment)
 	if err := stub.PutState(shipment.ShipmentID, json); err != nil {
 		return Error(400, "can't create shipment")
 	}
 	return Success(http.StatusOK, "OK", nil)
 }
+
+func sumShipmentItem (array []ShipmentItem) []SumItems {
+        
+    m := make(map[string]float32)
+    
+    for i := 0; i < (len(array));  i++ {
+        itemQuantity, _ := strconv.ParseFloat(array[i].Quantity, 32)
+        floatQuantity := float32(itemQuantity)
+        m[array[i].ItemCode] += floatQuantity 	
+	}
+   
+    
+    // Convert map to slice of key-value pairs.
+    var pairs []SumItems
+    for key, value := range m {
+        var item SumItems
+        item.ItemCode = key
+        item.Quantity = value
+        pairs = append(pairs, item)
+    }
+    
+	return pairs
+}
+
 
 func (cc *SVS) getAllShipments(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 	queryString := fmt.Sprintf("{\"selector\": {\"ShipmentDate\": {\"$regex\": \"^\"}}}")
