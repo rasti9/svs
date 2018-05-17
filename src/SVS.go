@@ -32,9 +32,11 @@ type HISTORY struct {
 	TxId        string      `json:"transactionId"`
 }
 
-type BASICSTATS struct {
-	TotalLot  int `json:"totalLot"`
-	TotalCert int `json:"totalCert"`
+type STATISTICS struct {
+	TotalContracts int `json:"TotalContracts"`
+	TotalOrders int    `json:"TotalOrders"`
+    TotalShipments int `json:"TotalShipments"`
+    TotalPayments int  `json:"TotalPayments"`
 }
 
 type SEARCH struct {
@@ -48,6 +50,11 @@ type Search_Shipment struct {
 type Search_Payment struct {
 	Payments []Payment
 }
+
+type Search_Order struct {
+	Orders []Order
+}
+
 
 type ITEM struct {
 	SUBLOT_NUMBER    string `xml:"SUBLOT_NUMBER"`
@@ -212,6 +219,18 @@ type Payment struct {
 type SVS struct {
 }
 
+
+type SearchResponse struct {
+    // A status code that should follow the HTTP status codes.
+    Status int32 `protobuf:"varint,1,opt,name=status" json:"status,omitempty"`
+    // A message associated with the response code.
+    Message string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
+    // A payload that can be used to include metadata with this response.
+    Payload []byte `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+}
+
+
+
 var dateFormat string = "02.01.2006"
 var dateDiff float64 = 5
 var logger = shim.NewLogger("certificate")
@@ -261,7 +280,11 @@ func (cc *SVS) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
     case "approveShipment":
 		return cc.approveShipment(stub, args)       
     case "makePayment":
-		return cc.makePayment(stub, args)   
+		return cc.makePayment(stub, args) 
+    case "getStatistics":
+		return cc.getStatistics(stub, args)    
+        
+        
 		//	case "uploadXml":
 		//		return cc.uploadXml(stub, args)
 		//	case "search":
@@ -480,20 +503,19 @@ func (cc *SVS) getAllOrders(stub shim.ChaincodeStubInterface, args []string) pee
 	if err != nil {
 		return Error(http.StatusInternalServerError, err.Error())
 	}
-
+    
 	defer resultsIterator.Close()
 
-	var resultJson []byte
+	var results Search_Order
 	for resultsIterator.HasNext() {
 		it, _ := resultsIterator.Next()
 		strOrder, _ := stub.GetState(it.Key)
-		resultJson = append(resultJson, strOrder[:]...)
-		// var order Order
-		// json.Unmarshal(contract, &contractStruct)
-		// results.Contracts = append(results.Contracts, contractStruct)
+		var orderStruct Order
+        json.Unmarshal(strOrder, &orderStruct)
+        results.Orders = append(results.Orders, orderStruct)
 
 	}
-	// resultJson, _ := json.Marshal(results.Contracts)
+    resultJson, _ := json.Marshal(results.Orders)
 	return Success(200, "OK", resultJson)
 }
 
@@ -534,6 +556,36 @@ func (cc *SVS) approveShipment(stub shim.ChaincodeStubInterface, args []string) 
 	}
 	return Success(200, "OK", nil)    
     
+}
+
+func (cc *SVS) getStatistics(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+    
+    var stats STATISTICS
+     
+    var orderStruct Search_Order
+    var contractStruct SEARCH
+    var shipmentStruct Search_Shipment
+    var paymentStruct Search_Payment
+    
+    orderResponse := cc.getAllOrders(stub, args)
+    contractResponse := cc.getAllContracts(stub, args)
+    paymentResponse := cc.getAllPayments(stub, args)
+    shipmentResponse := cc.getAllShipments(stub, args)
+    
+    json.Unmarshal(orderResponse.Payload, &orderStruct.Orders)    
+    stats.TotalOrders = len(orderStruct.Orders)
+    
+    json.Unmarshal(contractResponse.Payload, &contractStruct.Contracts)    
+    stats.TotalContracts = len(contractStruct.Contracts)
+    
+    json.Unmarshal(paymentResponse.Payload, &paymentStruct.Payments)    
+    stats.TotalPayments = len(paymentStruct.Payments)
+    
+    json.Unmarshal(shipmentResponse.Payload, &shipmentStruct.Shipments)    
+    stats.TotalShipments= len(shipmentStruct.Shipments)
+
+	json, _ := json.Marshal(stats)
+	return Success(200, "OK", json)
 }
 
 
@@ -653,32 +705,32 @@ func (cc *SVS) history(stub shim.ChaincodeStubInterface, args []string) peer.Res
 	return Success(200, "OK", jsonStr)
 }
 
-func (cc *SVS) basicStats(stub shim.ChaincodeStubInterface, args []string) peer.Response {
-	queryString := fmt.Sprintf("{\"selector\": {\"CERT_NUMBER\": {\"$regex\": \"^\"}}}")
-	resultsIterator, err := stub.GetQueryResult(queryString)
-	var stats BASICSTATS
-	stats.TotalCert = 0
-	stats.TotalLot = 0
-	if err != nil {
-		return Error(http.StatusInternalServerError, err.Error())
-	}
-	defer resultsIterator.Close()
-
-	for resultsIterator.HasNext() {
-		it, _ := resultsIterator.Next()
-		cert, _ := stub.GetState(it.Key)
-		var certificate CERTIFICATE
-		json.Unmarshal(cert, &certificate)
-		stats.TotalCert += 1
-		for i, _ := range certificate.ITEMS {
-			if certificate.ITEMS[i].SUBLOT_NUMBER != "" {
-				stats.TotalLot += 1
-			}
-		}
-	}
-	json, _ := json.Marshal(stats)
-	return Success(200, "OK", json)
-}
+//func (cc *SVS) basicStats(stub shim.ChaincodeStubInterface, args []string) peer.Response {
+//	queryString := fmt.Sprintf("{\"selector\": {\"CERT_NUMBER\": {\"$regex\": \"^\"}}}")
+//	resultsIterator, err := stub.GetQueryResult(queryString)
+//	var stats BASICSTATS
+//	stats.TotalCert = 0
+//	stats.TotalLot = 0
+//	if err != nil {
+//		return Error(http.StatusInternalServerError, err.Error())
+//	}
+//	defer resultsIterator.Close()
+//
+//	for resultsIterator.HasNext() {
+//		it, _ := resultsIterator.Next()
+//		cert, _ := stub.GetState(it.Key)
+//		var certificate CERTIFICATE
+//		json.Unmarshal(cert, &certificate)
+//		stats.TotalCert += 1
+//		for i, _ := range certificate.ITEMS {
+//			if certificate.ITEMS[i].SUBLOT_NUMBER != "" {
+//				stats.TotalLot += 1
+//			}
+//		}
+//	}
+//	json, _ := json.Marshal(stats)
+//	return Success(200, "OK", json)
+//}
 
 func (cc *SVS) stats(stub shim.ChaincodeStubInterface, args []string) peer.Response {
 

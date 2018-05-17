@@ -142,6 +142,16 @@ paths:
         500:
           description: "can't get orders"
           
+  /getStatistics:  
+    get:
+      operationId: getStatistics
+      summary: Get statistics
+      responses:
+        200:
+          description: "OK"
+        500:
+          description: "can't get statistics"         
+          
   /createShipment:
     post:
       operationId: createShipment
